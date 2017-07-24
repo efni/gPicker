@@ -17,6 +17,7 @@ namespace WindowsFormsApplication1
 		List<string> Items;
 		List<string> LastItems;
 		List<Button> DeleteButtons;
+        List<Label> lbMs;
 		bool Inputing;
 		int Fading;
 		bool InputChanged;
@@ -26,28 +27,37 @@ namespace WindowsFormsApplication1
 		int DestWidth;
 		int DestPickTop;
 
-		const int LineSpace = 28;
-		const int BaseButtonTop = 20;
-		const int BaseHeight = 95;
-		const int MinWidth = 135;
-		const int BaseWidth = 70;
+		const int LineSpace = 35;
+		const int BaseButtonTop = 18;
+		int BaseHeight = 68;
+		const int MinWidth = 180;
+		const int BaseWidth = 90;
+        const int BaseItemTop = 11;
+		int TitleHeight;
+        Font TextFont = new System.Drawing.Font("Microsoft YaHei", 22.5F, FontStyle.Regular, GraphicsUnit.Pixel);
 
 		public Form1()
 		{
 			InitializeComponent();
 			Items = new List<string>();
 			DeleteButtons = new List<Button>();
+            lbMs = new List<Label>();
 			Fading = 4;
 			InputChanged = false;
 		}
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
+			//test
+			Rectangle screenRectangle = RectangleToScreen(this.ClientRectangle);
+			TitleHeight = screenRectangle.Top - this.Top;
+			BaseHeight = BaseHeight + TitleHeight;
+
 			string key;
 			key = "627cc29b-fabd-4f00-b0b0-2fead2262323";
 			if (File.Exists("key.ini"))
 			{
-				FileStream fkey = new FileStream("key.ini", FileMode.Open);
+				FileStream fkey = new FileStream("key.ini", FileMode.Open, FileAccess.Read);
 				StreamReader srkey = new StreamReader(fkey);
 				string sLine = srkey.ReadLine();
 				if (sLine != null && sLine.Trim() != "")
@@ -64,6 +74,9 @@ namespace WindowsFormsApplication1
 			lbM.Top = 10;
 			btAdd.Top = BaseButtonTop;
 			btPick.Top = BaseButtonTop;
+            tbInput.Font = TextFont;
+            this.MinimumSize = new Size(MinWidth, BaseHeight);
+            this.MaximumSize = new Size(MinWidth, BaseHeight);
 			this.Height = BaseHeight;
 			this.Width = MinWidth;
 		}
@@ -76,6 +89,8 @@ namespace WindowsFormsApplication1
 			if (!Inputing)
 			{
 				tbInput.Text = "";
+                tbInput.Top = Items.Count * LineSpace + BaseItemTop;
+                tbInput.Width = 1;
 				tbInput.Visible = true;
 				tbInput.Focus();
 				Inputing = true;
@@ -107,7 +122,7 @@ namespace WindowsFormsApplication1
 			waiticon = 0;
 			tiWait.Enabled = true;
 			btAdd.Visible = false;
-			btPick.Image = global::Properties.Resources.wait1;
+            btPick.BackgroundImage = global::Properties.Resources.wait1_48;
 
 			Fading = 0;
 			tiFade.Enabled = true;
@@ -147,30 +162,47 @@ namespace WindowsFormsApplication1
 				return;
 
 			Items.Add(str);
+
 			MyButton aButton = new MyButton();
-			aButton.Width = 11;
-			aButton.Height = 11;
-			aButton.Top = (Items.Count - 1) * LineSpace + 19;
+			aButton.Width = 14;
+			aButton.Height = 14;
+            aButton.Top = (Items.Count - 1) * LineSpace + BaseItemTop + 11;
 			aButton.FlatStyle = FlatStyle.Flat;
-			aButton.Left = 15;
-			//aButton.Left = (TextRenderer.MeasureText(str, lbM.Font)).Width + 30;
+			aButton.Left = (TextRenderer.MeasureText(str, TextFont)).Width + 30;
 			aButton.Click += btDelete_Click;
 			aButton.TabStop = false;
 			aButton.FlatAppearance.BorderSize = 0;
 			aButton.FlatAppearance.MouseOverBackColor = System.Drawing.Color.Gainsboro;
-			aButton.Image = global::Properties.Resources.cross_10;
+            aButton.BackgroundImage = global::Properties.Resources.cross;
+            aButton.BackgroundImageLayout = ImageLayout.Stretch;
 			this.Controls.Add(aButton);
 			aButton.BringToFront();
 			DeleteButtons.Add(aButton);
+
+            Label aLabel = new Label();
+            aLabel.Font = TextFont;
+            aLabel.AutoSize = true;
+            aLabel.Top = (Items.Count - 1) * LineSpace + BaseItemTop;
+            aLabel.Left = 20;
+            aLabel.Text = str;
+            aLabel.Click += Form1_Click;
+            this.Controls.Add(aLabel);
+            lbMs.Add(aLabel);
 		}
 
 		private void Delete(int i)
 		{
-			Button me = DeleteButtons[i];
-			Items.RemoveAt(i);
+			Button meb = DeleteButtons[i];
 			DeleteButtons.RemoveAt(i);
-			this.Controls.Remove(me);
-			me.Dispose();
+			this.Controls.Remove(meb);
+            meb.Dispose();
+
+            Label mel = lbMs[i];
+            lbMs.RemoveAt(i);
+            this.Controls.Remove(mel);
+            mel.Dispose();
+
+            Items.RemoveAt(i);
 		}
 
 		private void tiLayout_Tick(object sender, EventArgs e)
@@ -183,13 +215,16 @@ namespace WindowsFormsApplication1
 			for (int i = 0; i < N; i++)
 			{
 				lbm += Items[i] + "\r\n";
-				DeleteButtons[i].Top = i * LineSpace + 19;
-				int width = (TextRenderer.MeasureText(Items[i], lbM.Font)).Width;
+                lbMs[i].Top = i * LineSpace + BaseItemTop;
+                if (lbMs[i].Text != Items[i])
+                    lbMs[i].Text = Items[i];
+                int width = (TextRenderer.MeasureText(Items[i], TextFont)).Width;
 				if (width > maxwidth)
 					maxwidth = width;
+                DeleteButtons[i].Top = i * LineSpace + BaseItemTop + 11;
+                if (DeleteButtons[i].Left != width + 30)
+                DeleteButtons[i].Left = width + 30;
 			}
-			if (lbM.Text != lbm)
-				lbM.Text = lbm;
 
 			if (Fading <= 2)
 			{
@@ -199,11 +234,11 @@ namespace WindowsFormsApplication1
 			}
 			else if (Inputing)
 			{
-				btAdd.Image = global::Properties.Resources.ok;
-				tbInput.Top = N * LineSpace + 10;
+                btAdd.BackgroundImage = global::Properties.Resources.ok_48;
+                tbInput.Top = N * LineSpace + BaseItemTop;
 				DestPickTop = (N + 1) * LineSpace + BaseButtonTop;
 				DestHeight = (N + 1) * LineSpace + BaseHeight;
-				int inputwidth = (TextRenderer.MeasureText(tbInput.Text, tbInput.Font)).Width;
+                int inputwidth = (TextRenderer.MeasureText(tbInput.Text, TextFont)).Width;
 				tbInput.Width = Math.Max(inputwidth + 10, 50);
 				if (inputwidth > maxwidth)
 					maxwidth = inputwidth;
@@ -218,7 +253,7 @@ namespace WindowsFormsApplication1
 			}
 			else
 			{
-				btAdd.Image = global::Properties.Resources.plus;
+                btAdd.BackgroundImage = global::Properties.Resources.plus_48;
 				tbInput.Visible = false;
 				DestPickTop = N * LineSpace + BaseButtonTop;
 				DestHeight = N * LineSpace + BaseHeight;
@@ -228,7 +263,7 @@ namespace WindowsFormsApplication1
 			if (DestPickTop != btAdd.Top)
 			{
 				double grow = DestPickTop - btAdd.Top;
-				grow = grow * 0.1;
+				grow = grow * 0.2;
 				if (Math.Abs(grow) < 1)
 				{
 					grow = Math.Sign(grow);
@@ -239,11 +274,12 @@ namespace WindowsFormsApplication1
 			if (DestHeight != this.Height)
 			{
 				double grow = DestHeight - this.Height;
-				grow = grow * 0.1;
+				grow = grow * 0.15;
 				if (Math.Abs(grow) < 1)
 				{
 					grow = Math.Sign(grow);
 				}
+                this.MaximumSize = new Size(MaximumSize.Width, Height + (int)grow);
 				this.Height += (int)grow;
 			}
 			if (DestWidth < MinWidth)
@@ -251,11 +287,12 @@ namespace WindowsFormsApplication1
 			if (DestWidth != this.Width)
 			{
 				double grow = DestWidth - this.Width;
-				grow = grow * 0.1;
+				grow = grow * 0.15;
 				if (Math.Abs(grow) < 1)
 				{
 					grow = Math.Sign(grow);
 				}
+                this.MaximumSize = new Size(Width + (int)grow, MaximumSize.Height);
 				this.Width += (int)grow;
 			}
 		}
@@ -271,13 +308,17 @@ namespace WindowsFormsApplication1
 			if (Fading == 1)
 			{
 				tiFadetick++;
-				Color fc = lbM.ForeColor;
-				Color bc = lbM.BackColor;
-				int nr, ng, nb;
-				nr = (int)(fc.R + (bc.R - fc.R) * 0.5);
-				ng = (int)(fc.G + (bc.G - fc.G) * 0.5);
-				nb = (int)(fc.B + (bc.B - fc.B) * 0.5);
-				lbM.ForeColor = Color.FromArgb(nr, ng, nb);
+				foreach (Label lb in lbMs)
+                {
+                    Color fc = lb.ForeColor;
+                    Color bc = lb.BackColor;
+                    int nr, ng, nb;
+                    nr = (int)(fc.R + (bc.R - fc.R) * 0.5);
+                    ng = (int)(fc.G + (bc.G - fc.G) * 0.5);
+                    nb = (int)(fc.B + (bc.B - fc.B) * 0.5);
+
+                    lb.ForeColor = Color.FromArgb(nr, ng, nb);
+                }
 				if (tiFadetick == 1)
 				{
 					Thread threadget = new Thread(ThreadGet);
@@ -299,6 +340,10 @@ namespace WindowsFormsApplication1
 				if (tiFadetick == 30)
 				{
 					Add(Result);
+                    foreach (Label lb in lbMs)
+                    {
+                        lb.ForeColor = lb.BackColor;
+                    }
 					Fading = 3;
 					tiFadetick = 0;
 				}
@@ -306,19 +351,23 @@ namespace WindowsFormsApplication1
 			else if (Fading == 3)
 			{
 				tiFadetick++;
-				Color fc = lbM.ForeColor;
-				Color dc = SystemColors.ControlText;
-				double dr, dg, db;
-				dr = (fc.R - dc.R) * 0.03;
-				dg = (fc.G - dc.G) * 0.03;
-				db = (fc.B - dc.B) * 0.03;
-				if (dr != 0 && Math.Abs(dr) < 1)
-					dr = Math.Sign(dr);
-				if (dg != 0 && Math.Abs(dg) < 1)
-					dg = Math.Sign(dg);
-				if (db != 0 && Math.Abs(db) < 1)
-					db = Math.Sign(db);
-				lbM.ForeColor = Color.FromArgb((int)(fc.R - dr), (int)(fc.G - dg), (int)(fc.B - db));
+                foreach (Label lb in lbMs)
+                {
+                    Color fc = lb.ForeColor;
+                    Color dc = SystemColors.ControlText;
+                    double dr, dg, db;
+                    dr = (fc.R - dc.R) * 0.03;
+                    dg = (fc.G - dc.G) * 0.03;
+                    db = (fc.B - dc.B) * 0.03;
+                    if (dr != 0 && Math.Abs(dr) < 1)
+                        dr = Math.Sign(dr);
+                    if (dg != 0 && Math.Abs(dg) < 1)
+                        dg = Math.Sign(dg);
+                    if (db != 0 && Math.Abs(db) < 1)
+                        db = Math.Sign(db);
+
+                    lb.ForeColor = Color.FromArgb((int)(fc.R - dr), (int)(fc.G - dg), (int)(fc.B - db));
+                }
 				if (tiFadetick == 60)
 				{
 					Fading = 4;
@@ -339,7 +388,7 @@ namespace WindowsFormsApplication1
 			if (Fading >= 3)
 			{
 				waiticon = 0;
-				btPick.Image = global::Properties.Resources.dice;
+                btPick.BackgroundImage = global::Properties.Resources.dice_48;
 				btAdd.Visible = true;
 				tiWait.Enabled = false;
 				return;
@@ -348,11 +397,11 @@ namespace WindowsFormsApplication1
 			if (waiticon == 3)
 				waiticon = 0;
 			if (waiticon == 0)
-				btPick.Image = global::Properties.Resources.wait1;
+                btPick.BackgroundImage = global::Properties.Resources.wait1_48;
 			else if (waiticon == 1)
-				btPick.Image = global::Properties.Resources.wait2;
+                btPick.BackgroundImage = global::Properties.Resources.wait2_48;
 			else if (waiticon == 2)
-				btPick.Image = global::Properties.Resources.wait3;
+                btPick.BackgroundImage = global::Properties.Resources.wait3_48;
 		}
 
 		private void ThreadGet()
